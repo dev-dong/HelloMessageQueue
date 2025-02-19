@@ -1,6 +1,8 @@
 package org.seeroo.hellomessagequeue.config;
 
+import org.seeroo.hellomessagequeue.consumer.WorkQueueConsumer;
 import org.seeroo.hellomessagequeue.model.Receiver;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -46,7 +48,7 @@ public class RabbitMQConfig {
      */
 
     // 큐 네임 설정
-    public static final String QUEUE_NAME = "helloqueue";
+    public static final String QUEUE_NAME = "WorkQueue";
 
     @Bean
     public Queue queue() {
@@ -66,11 +68,12 @@ public class RabbitMQConfig {
         container.setConnectionFactory(connectionFactory);
         container.setQueueNames(QUEUE_NAME);
         container.setMessageListener(listenerAdapter);
+        container.setAcknowledgeMode(AcknowledgeMode.AUTO);
         return container;
     }
 
     @Bean
-    public MessageListenerAdapter listenerAdapter(Receiver receiver) {
-        return new MessageListenerAdapter(receiver, "receiveMessage");
+    public MessageListenerAdapter listenerAdapter(WorkQueueConsumer workQueueTask) {
+        return new MessageListenerAdapter(workQueueTask, "workQueueTask");
     }
 }
