@@ -11,4 +11,10 @@ public class HomeController {
         model.addAttribute("message", "Welcome to RabbitMQ Sample!");
         return "home"; // resources/templates/home.html 파일 찾음
     }
+
+    @GetMapping("/news")
+    public String news(Model model) {
+        model.addAttribute("message", "Welcome to RabbitMQ Sample!");
+        return "news";
+    }
 }
