@@ -13,17 +13,17 @@ public class NewsSubscriber {
         this.messagingTemplate = messagingTemplate;
     }
 
-    @RabbitListener(queues = RabbitMQConfig.JAVA_QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.ERROR_QUEUE)
     public void javaNews(String message) {
         messagingTemplate.convertAndSend("/topic/java", message);
     }
 
-    @RabbitListener(queues = RabbitMQConfig.SPRING_QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.WARN_QUEUE)
     public void springNews(String message) {
         messagingTemplate.convertAndSend("/topic/spring", message);
     }
 
-    @RabbitListener(queues = RabbitMQConfig.VUE_QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.INFO_QUEUE)
     public void vueNews(String message) {
         messagingTemplate.convertAndSend("/topic/vue", message);
     }

@@ -1,54 +1,51 @@
 package org.seeroo.hellomessagequeue.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.FanoutExchange;
-import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    // 큐 네임 설정
-    public static final String FANOUT_EXCHANGE_FOR_NEWS = "newsExchange";
 
-    public static final String JAVA_QUEUE = "javaQueue";
-    public static final String SPRING_QUEUE = "springQueue";
-    public static final String VUE_QUEUE = "vueQueue";
+    // 큐 이름을 정의
+    public static final String ERROR_QUEUE = "error_queue";
+    public static final String WARN_QUEUE = "warn_queue";
+    public static final String INFO_QUEUE = "info_queue";
+
+    public static final String DIRECT_EXCHANGE = "direct_exchange";
 
     @Bean
-    public Queue javaQueue() {
-        return new Queue(JAVA_QUEUE, false);
+    public DirectExchange directExchange() {
+        return new DirectExchange(DIRECT_EXCHANGE);
     }
 
     @Bean
-    public Queue springQueue() {
-        return new Queue(SPRING_QUEUE, false);
+    public Queue errorQueue() {
+        return new Queue(ERROR_QUEUE, false);
     }
 
     @Bean
-    public Queue vueQueue() {
-        return new Queue(VUE_QUEUE, false);
+    public Queue warnQueue() {
+        return new Queue(WARN_QUEUE, false);
     }
 
     @Bean
-    public FanoutExchange fanoutExchange() {
-        // 메시지를 수신하면 연결된 모든 큐로 브로드캐스트
-        return new FanoutExchange(FANOUT_EXCHANGE_FOR_NEWS);
+    public Queue infoQueue() {
+        return new Queue(INFO_QUEUE, false);
     }
 
     @Bean
-    public Binding javaBinding(Queue javaQueue, FanoutExchange fanoutExchange) {
-        return BindingBuilder.bind(javaQueue).to(fanoutExchange);
+    public Binding errorBinding() {
+        return BindingBuilder.bind(errorQueue()).to(directExchange()).with("error");
     }
 
     @Bean
-    public Binding springBinding(Queue springQueue, FanoutExchange fanoutExchange) {
-        return BindingBuilder.bind(springQueue).to(fanoutExchange);
+    public Binding warnBinding() {
+        return BindingBuilder.bind(warnQueue()).to(directExchange()).with("warn");
     }
 
     @Bean
-    public Binding vueBinding() {
-        return BindingBuilder.bind(vueQueue()).to(fanoutExchange());
+    public Binding infoBinding() {
+        return BindingBuilder.bind(infoQueue()).to(directExchange()).with("info");
     }
 }
