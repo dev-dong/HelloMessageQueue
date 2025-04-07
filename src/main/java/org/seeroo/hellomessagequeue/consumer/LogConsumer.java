@@ -2,7 +2,9 @@ package org.seeroo.hellomessagequeue.consumer;
 
 import org.seeroo.hellomessagequeue.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
 
+@Component
 public class LogConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.ERROR_QUEUE)
@@ -18,6 +20,11 @@ public class LogConsumer {
     @RabbitListener(queues = RabbitMQConfig.INFO_QUEUE)
     public void consumeInfo(String message) {
         System.out.println("[INFO]를 받음: " + message);
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.ALL_LOG_QUEUE)
+    public void consumeAllLogs(String message) {
+        System.out.println("[ALL LOGS]를 받음: " + message);
     }
 
 }
