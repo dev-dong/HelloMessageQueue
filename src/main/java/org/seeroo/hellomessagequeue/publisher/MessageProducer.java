@@ -1,12 +1,15 @@
 package org.seeroo.hellomessagequeue.publisher;
 
+import org.seeroo.hellomessagequeue.config.RabbitMQConfig;
 import org.seeroo.hellomessagequeue.model.StockEntity;
 import org.seeroo.hellomessagequeue.model.StockRepository;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class MessageProducer {
@@ -19,40 +22,38 @@ public class MessageProducer {
     }
 
     @Transactional
-    public void sendMessage(StockEntity stockEntity, String testCase) {
-        rabbitTemplate.execute(channel -> {
-            try {
-                channel.txSelect(); // 트랜잭션 시작
-                stockEntity.setProcessed(false);
-                stockEntity.setCreatedAt(LocalDateTime.now());
-                StockEntity stockEntitySaved = stockRepository.save(stockEntity);
+    public void sendMessage(StockEntity stockEntity, boolean testCase) {
+        stockEntity.setProcessed(false);
+        stockEntity.setCreatedAt(LocalDateTime.now());
+        StockEntity entity = stockRepository.save(stockEntity);
 
-                System.out.println("Stock Saved: " + stockEntitySaved);
+        System.out.println("[producer entity] : " + entity);
 
-                // 메시지 발행
-                rabbitTemplate.convertAndSend("transactionQueue", stockEntitySaved);
+        if (stockEntity.getUserId() == null || stockEntity.getUserId().isEmpty()) {
+            throw new RuntimeException("User id is required");
+        }
 
-                if ("fail".equalsIgnoreCase(testCase)) {
-                    throw new RuntimeException("트랜잭션 작업중에 에러 발생");
-                }
+        try {
+            // 메시지를 rabbitmq 에 전송
+            CorrelationData correlationData = new CorrelationData(entity.getId().toString());
+            rabbitTemplate.convertAndSend(
+                    testCase ? "nonExistentExchange" : RabbitMQConfig.EXCHANGE_NAME,
+                    testCase ? "invalidRoutingKey" : RabbitMQConfig.ROUTING_KEY,
+                    entity,
+                    correlationData
+            );
 
-                channel.txCommit();
-                System.out.println("트랜잭션이 정상적으로 처리 되었음!~");
-
-            } catch (Exception e) {
-                System.out.println("트랜잭션 실패 : " + e.getMessage());
-                channel.txRollback();
-                throw new RuntimeException("트랜잭션 롤백 완료 ", e);
-            } finally {
-                if (channel != null) {
-                    try {
-                        channel.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+            if (correlationData.getFuture().get(5, TimeUnit.SECONDS).isAck()) {
+                System.out.println("[producer correlationData] 성공" + entity);
+                entity.setProcessed(true);
+                stockRepository.save(entity);
+            } else {
+                throw new RuntimeException("# confirm 실패 - 롤백");
             }
-            return null;
-        });
+
+        } catch (Exception e) {
+            System.out.println("[producer exception fail] : " + e);
+            throw new RuntimeException(e);
+        }
     }
 }
